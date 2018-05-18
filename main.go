@@ -141,8 +141,8 @@ func toMarkDown(filename string) {
 	basename := strings.TrimSuffix(filename, filepath.Ext(filename))
 	// fmt.Println(basename)
 
-	imgdest := fmt.Sprintf("%s/imgs/%s", dest, basename)
-	_ = os.MkdirAll(imgdest, 0777)
+	imgrel := fmt.Sprintf("imgs/%s", basename)
+	_ = os.MkdirAll(fmt.Sprintf("%s/%s", dest, imgrel), 0777)
 
 	n := readAsNote(filename)
 
@@ -162,11 +162,13 @@ func toMarkDown(filename string) {
 			var imgname string
 			imgdata := c.Outputs[0].Data
 			if imgdata.ImagePng != "" {
-				imgname = fmt.Sprintf("%s/%04d.png", imgdest, imgcount)
-				toImage(imgname, imgdata.ImagePng)
+				imgname = fmt.Sprintf("%s/%04d.png", imgrel, imgcount)
+				imgpath := fmt.Sprintf("%s/%s", dest, imgname)
+				toImage(imgpath, imgdata.ImagePng)
 			} else {
-				imgname = fmt.Sprintf("%s/%04d.jpg", imgdest, imgcount)
-				toImage(imgname, imgdata.ImageJpeg)
+				imgname = fmt.Sprintf("%s/%04d.jpg", imgrel, imgcount)
+				imgpath := fmt.Sprintf("%s/%s", dest, imgname)
+				toImage(imgpath, imgdata.ImageJpeg)
 			}
 			imgcount++
 
