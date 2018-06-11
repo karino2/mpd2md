@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -134,7 +136,31 @@ layout: page
 `)
 }
 
-func toMarkDown(filename string) {
+func printMarkDown(file *os.File, contents string, ispandoc bool) {
+	if ispandoc {
+		patMathStates := regexp.MustCompile(`^\$\$[^\$]+\$\$$`)
+		patMathInline := regexp.MustCompile(`\$\$[^\$]+\$\$`)
+		patDolDol := regexp.MustCompile(`\$\$`)
+		for _, line := range strings.Split(contents, "\n") {
+			if patMathStates.MatchString(line) {
+				// for only $$ $$ line, just as is for indenpent block.
+				fmt.Fprintln(file, line)
+			} else if patMathInline.MatchString(line) {
+				// $$ $$ inside some sentence, replace $$ with $.
+				fmt.Fprintln(file, patDolDol.ReplaceAllString(line, "$"))
+
+			} else {
+				fmt.Fprintln(file, line)
+			}
+		}
+	} else {
+		fmt.Fprint(file, contents)
+	}
+	fmt.Fprint(file, "\n\n")
+
+}
+
+func toMarkDown(filename string, ispandoc bool) {
 	imgcount := 0
 	dest := "work"
 
@@ -156,8 +182,7 @@ func toMarkDown(filename string) {
 	for _, c := range n.Cells[1:] {
 		// fmt.Printf("%s\n", c.CellType)
 		if c.CellType == "markdown" {
-			fmt.Fprint(mdf, c.Source[0])
-			fmt.Fprint(mdf, "\n\n")
+			printMarkDown(mdf, c.Source[0], ispandoc)
 		} else {
 			var imgname string
 			imgdata := c.Outputs[0].Data
@@ -180,12 +205,17 @@ func toMarkDown(filename string) {
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: mpd2md target.ipynb")
+
+	mdtype := flag.String("type", "jekyll", "pandoc or jekyll. math is a little different.")
+
+	flag.Parse()
+
+	if len(flag.Args()) != 1 {
+		fmt.Println("Usage: mpd2md [-type=pandoc] target.ipynb")
 		return
 	}
 
-	toMarkDown(os.Args[1])
+	toMarkDown(flag.Args()[0], *mdtype == "pandoc")
 	// toMarkDown("intro.ipynb")
 	// toMarkDown("jpgtest.ipynb")
 	/*
