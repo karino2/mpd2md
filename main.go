@@ -160,14 +160,14 @@ func printMarkDown(file *os.File, contents string, ispandoc bool) {
 
 }
 
-func toMarkDown(filename string, ispandoc bool) {
+func toMarkDown(filename string, ispandoc bool, ispost bool) {
 	imgcount := 0
 	dest := "work"
 
 	basename := strings.TrimSuffix(filename, filepath.Ext(filename))
 	// fmt.Println(basename)
 
-	imgrel := fmt.Sprintf("imgs/%s", basename)
+	imgrel := fmt.Sprintf("images/%s", basename)
 	_ = os.MkdirAll(fmt.Sprintf("%s/%s", dest, imgrel), 0777)
 
 	n := readAsNote(filename)
@@ -197,7 +197,12 @@ func toMarkDown(filename string, ispandoc bool) {
 			}
 			imgcount++
 
-			fmt.Fprintf(mdf, "![%s](%s)\n\n", imgname, imgname)
+			if ispost {
+				// ![imgs/2018-08-18-220928/0000.png]({{"/assets/images/2018-08-18-220928/0000.png" | absolute_url }})
+				fmt.Fprintf(mdf, "![%s]({{\"/assets/%s\" | absolute_url}})\n\n", imgname, imgname)
+			} else {
+				fmt.Fprintf(mdf, "![%s](%s)\n\n", imgname, imgname)
+			}
 		}
 
 	}
@@ -206,7 +211,7 @@ func toMarkDown(filename string, ispandoc bool) {
 
 func main() {
 
-	mdtype := flag.String("type", "jekyll", "pandoc or jekyll. math is a little different.")
+	mdtype := flag.String("type", "jekyll", "pandoc, jekyll, post. For pandoc, math handling is a little different. For post, image link should be assets.")
 
 	flag.Parse()
 
@@ -215,7 +220,7 @@ func main() {
 		return
 	}
 
-	toMarkDown(flag.Args()[0], *mdtype == "pandoc")
+	toMarkDown(flag.Args()[0], *mdtype == "pandoc", *mdtype == "post")
 	// toMarkDown("intro.ipynb")
 	// toMarkDown("jpgtest.ipynb")
 	/*
